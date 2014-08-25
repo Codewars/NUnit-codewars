@@ -35,6 +35,18 @@ namespace NUnit.ConsoleRunner
 
 		private ArrayList unhandledExceptions = new ArrayList();
 
+        private static string FormatMessage(string s)
+        {
+            if(s != null)
+            {
+                return s.Replace("\n", "<:LF:>");
+            }
+            else
+            {
+                return "";
+            }
+        }
+
 		public EventCollector( ConsoleOptions options, TextWriter outWriter, TextWriter errorWriter )
 		{
 			level = 0;
@@ -85,7 +97,7 @@ namespace NUnit.ConsoleRunner
 			        failureCount++;
     					
 			        if ( progress )
-				        Console.Write("F");
+				        Console.WriteLine("<FAILED::>" + FormatMessage(testResult.Message));
     					
 			        messages.Add( string.Format( "{0}) {1} :", failureCount, testResult.Test.TestName.FullName ) );
 			        messages.Add( testResult.Message.Trim( Environment.NewLine.ToCharArray() ) );
@@ -107,6 +119,14 @@ namespace NUnit.ConsoleRunner
 
                 case ResultState.Inconclusive:
                 case ResultState.Success:
+                    if(testResult.Message == null)
+                    {
+                        Console.WriteLine("<PASSED::>Test Passed");
+                    }
+                    else
+                    {
+                        Console.WriteLine("<PASSED::>" + FormatMessage(testResult.Message));
+                    }
                     testRunCount++;
                     break;
 
@@ -130,8 +150,8 @@ namespace NUnit.ConsoleRunner
 			if ( options.labels )
 				outWriter.WriteLine("***** {0}", currentTestName );
 				
-			if ( progress )
-				Console.Write(".");
+			if ( progress ){}
+				//Console.Write(".");
 		}
 
 		public void SuiteStarted(TestName testName)

@@ -1,6 +1,4 @@
 #!/bin/sh
-# build - Builds and tests NUnit
-
 NANT="tools/nant/bin/NAnt.exe"
 options="-f:scripts/nunit.build.targets"
 config=""

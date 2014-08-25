@@ -80,11 +80,7 @@ namespace NUnit.ConsoleRunner
                 : RuntimeFramework.CurrentFramework;
 
 #if CLR_2_0 || CLR_4_0
-            Console.WriteLine("ProcessModel: {0}    DomainUsage: {1}", processModel, domainUsage);
-
-            Console.WriteLine("Execution Runtime: {0}", framework);
 #else
-            Console.WriteLine("DomainUsage: {0}", domainUsage);
 
             if (processModel != ProcessModel.Default && processModel != ProcessModel.Single)
                 Console.WriteLine("Warning: Ignoring project setting 'processModel={0}'", processModel);
@@ -369,21 +365,11 @@ namespace NUnit.ConsoleRunner
 
 		private static void WriteSummaryReport( ResultSummarizer summary )
 		{
-            Console.WriteLine(
-                "Tests run: {0}, Errors: {1}, Failures: {2}, Inconclusive: {3}, Time: {4} seconds",
-                summary.TestsRun, summary.Errors, summary.Failures, summary.Inconclusive, summary.Time);
-            Console.WriteLine(
-                "  Not run: {0}, Invalid: {1}, Ignored: {2}, Skipped: {3}",
-                summary.TestsNotRun, summary.NotRunnable, summary.Ignored, summary.Skipped);
-            Console.WriteLine();
         }
 
         private void WriteErrorsAndFailuresReport(TestResult result)
         {
             reportIndex = 0;
-            Console.WriteLine("Errors and Failures:");
-            WriteErrorsAndFailures(result);
-            Console.WriteLine();
         }
 
         private void WriteErrorsAndFailures(TestResult result)

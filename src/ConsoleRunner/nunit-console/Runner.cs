@@ -6,6 +6,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Drawing;
 using NUnit.Core;
 using NUnit.Util;
 
