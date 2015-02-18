@@ -1,0 +1,12 @@
+bin
+src/ClientUtilities/util/obj
+src/ConsoleRunner/nunit-console-exe/obj
+src/ConsoleRunner/nunit-console/obj
+src/NUnitCore/core/obj
+src/tests/test-assembly/obj
+src/tests/test-utilities/obj
+src/tests/mock-assembly/obj
+src/PNUnit/pnunit.framework/obj
+src/*/obj
+src/**/obj
+nunit.userprefs

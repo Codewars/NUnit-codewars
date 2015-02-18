@@ -34,6 +34,7 @@ namespace NUnit.ConsoleRunner
 		private string currentTestName;
 
 		private ArrayList unhandledExceptions = new ArrayList();
+		private ArrayList describes = new ArrayList();
 
         private static string FormatMessage(string s)
         {
@@ -88,37 +89,46 @@ namespace NUnit.ConsoleRunner
 
 		public void TestFinished(TestResult testResult)
 		{
+			if (testResult.Test.ClassName != null && !describes.Contains(testResult.Test.ClassName)) {
+				Console.WriteLine ("<DESCRIBE::>" + testResult.Test.ClassName);
+				describes.Add (testResult.Test.ClassName);
+			}
+			if (testResult.Test.MethodName != null) {
+				Console.WriteLine ("<IT::>" + testResult.Test.MethodName);
+			}
+
             switch( testResult.ResultState )
             {
-                case ResultState.Error:
-                case ResultState.Failure:
-                case ResultState.Cancelled:
-                    testRunCount++;
-			        failureCount++;
-    					
-			        if ( progress )
-				        Console.WriteLine("<FAILED::>" + FormatMessage(testResult.Message));
-    					
-			        messages.Add( string.Format( "{0}) {1} :", failureCount, testResult.Test.TestName.FullName ) );
-			        messages.Add( testResult.Message.Trim( Environment.NewLine.ToCharArray() ) );
+				case ResultState.Failure:
+				case ResultState.Cancelled:
+					testRunCount++;
+					failureCount++;
+	    					
+					if (progress)
+						Console.WriteLine ("<FAILED::>" + FormatMessage (testResult.Message));
+	    					
+					messages.Add (string.Format ("{0}) {1} :", failureCount, testResult.Test.TestName.FullName));
+					messages.Add (testResult.Message.Trim (Environment.NewLine.ToCharArray ()));
 
-			        string stackTrace = StackTraceFilter.Filter( testResult.StackTrace );
-			        if ( stackTrace != null && stackTrace != string.Empty )
-			        {
-				        string[] trace = stackTrace.Split( System.Environment.NewLine.ToCharArray() );
-				        foreach( string s in trace )
-				        {
-					        if ( s != string.Empty )
-					        {
-						        string link = Regex.Replace( s.Trim(), @".* in (.*):line (.*)", "$1($2)");
-						        messages.Add( string.Format( "at\n{0}", link ) );
-					        }
-				        }
-			        }
+					string stackTrace = StackTraceFilter.Filter (testResult.StackTrace);
+					if (stackTrace != null && stackTrace != string.Empty) {
+						string[] trace = stackTrace.Split (System.Environment.NewLine.ToCharArray ());
+						foreach (string s in trace) {
+							if (s != string.Empty) {
+								string link = Regex.Replace (s.Trim (), @".* in (.*):line (.*)", "$1($2)");
+								messages.Add (string.Format ("at\n{0}", link));
+							}
+						}
+					}
+					if (testResult.ResultState == ResultState.Error) {
+						Console.WriteLine ("<ERROR::>" + FormatMessage (stackTrace));
+					} else if (stackTrace != null) {
+						Console.WriteLine (FormatMessage (stackTrace));
+					}
                     break;
 
-                case ResultState.Inconclusive:
-                case ResultState.Success:
+				case ResultState.Inconclusive:
+				case ResultState.Success:
                     if(testResult.Message == null)
                     {
                         Console.WriteLine("<PASSED::>Test Passed");
@@ -145,13 +155,7 @@ namespace NUnit.ConsoleRunner
 
 		public void TestStarted(TestName testName)
 		{
-			currentTestName = testName.FullName;
-
-			if ( options.labels )
-				outWriter.WriteLine("***** {0}", currentTestName );
-				
-			if ( progress ){}
-				//Console.Write(".");
+//			Console.WriteLine ("<IT::>" + FormatMessage (testName.Name));
 		}
 
 		public void SuiteStarted(TestName testName)
@@ -164,6 +168,7 @@ namespace NUnit.ConsoleRunner
 				failureCount = 0;
 				Trace.WriteLine( "################################ UNIT TESTS ################################" );
 				Trace.WriteLine( "Running tests in '" + testName.FullName + "'..." );
+//				Console.WriteLine ("<DESCRIBE::>" + FormatMessage (testName.UniqueName));
 			}
 		}
 
@@ -215,7 +220,7 @@ namespace NUnit.ConsoleRunner
 			//outWriter.WriteLine(msg);
 			//outWriter.WriteLine(exception.ToString());
 
-			Trace.WriteLine(msg);
+			Console.WriteLine("<ERROR::>" + FormatMessage(msg + "\n" + exception.ToString()));
 			Trace.WriteLine(exception.ToString());
 		}
 
