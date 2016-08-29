@@ -102,6 +102,15 @@
       <Project>{435428F8-5995-4CE4-8022-93D595A8CC0F}</Project>
       <Private>False</Private>
     </ProjectReference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\packages\Newtonsoft.Json.9.0.1\lib\net20\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <ProjectReference Include="..\..\..\Qualified\Qualified.csproj">
+      <Project>{E9933402-AD6C-42C2-B5FB-3B46C388C0A5}</Project>
+      <Name>Qualified</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="App.ico" />
@@ -119,6 +128,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="nunit-console.build" />
+    <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

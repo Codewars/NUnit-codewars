@@ -11,9 +11,11 @@ using System.Collections;
 using System.Collections.Specialized;
 using NUnit.Core;
 using NUnit.Util;
+using Qualified;
 
 namespace NUnit.ConsoleRunner
 {
+	
 	/// <summary>
 	/// Summary description for EventCollector.
 	/// </summary>
@@ -27,6 +29,7 @@ namespace NUnit.ConsoleRunner
 		private ConsoleOptions options;
 		private TextWriter outWriter;
 		private TextWriter errorWriter;
+		private StringWriter outputWriter;
 
 		StringCollection messages;
 		
@@ -35,18 +38,6 @@ namespace NUnit.ConsoleRunner
 
 		private ArrayList unhandledExceptions = new ArrayList();
 		private ArrayList describes = new ArrayList();
-
-        private static string FormatMessage(string s)
-        {
-            if(s != null)
-            {
-                return s.Replace("\n", "<:LF:>");
-            }
-            else
-            {
-                return "";
-            }
-        }
 
 		public EventCollector( ConsoleOptions options, TextWriter outWriter, TextWriter errorWriter )
 		{
@@ -85,121 +76,101 @@ namespace NUnit.ConsoleRunner
 
 		public void RunFinished(Exception exception)
 		{
-		}
-
-		public void TestFinished(TestResult testResult)
-		{
-			if (testResult.Test.ClassName != null && !describes.Contains(testResult.Test.ClassName)) {
-				Console.WriteLine ("<DESCRIBE::>" + testResult.Test.ClassName);
-				describes.Add (testResult.Test.ClassName);
-			}
-			if (testResult.Test.MethodName != null) {
-				Console.WriteLine ("<IT::>" + testResult.Test.MethodName);
-			}
-
-            switch( testResult.ResultState )
-            {
-				case ResultState.Failure:
-				case ResultState.Cancelled:
-					testRunCount++;
-					failureCount++;
-	    					
-					if (progress)
-						Console.WriteLine ("<FAILED::>" + FormatMessage (testResult.Message));
-	    					
-					messages.Add (string.Format ("{0}) {1} :", failureCount, testResult.Test.TestName.FullName));
-					messages.Add (testResult.Message.Trim (Environment.NewLine.ToCharArray ()));
-
-					string stackTrace = StackTraceFilter.Filter (testResult.StackTrace);
-					if (stackTrace != null && stackTrace != string.Empty) {
-						string[] trace = stackTrace.Split (System.Environment.NewLine.ToCharArray ());
-						foreach (string s in trace) {
-							if (s != string.Empty) {
-								string link = Regex.Replace (s.Trim (), @".* in (.*):line (.*)", "$1($2)");
-								messages.Add (string.Format ("at\n{0}", link));
-							}
-						}
-					}
-					if (testResult.ResultState == ResultState.Error) {
-						Console.WriteLine ("<ERROR::>" + FormatMessage (stackTrace));
-					} else if (stackTrace != null) {
-						Console.WriteLine (FormatMessage (stackTrace));
-					}
-                    break;
-
-				case ResultState.Inconclusive:
-				case ResultState.Success:
-                    if(testResult.Message == null)
-                    {
-                        Console.WriteLine("<PASSED::>Test Passed");
-                    }
-                    else
-                    {
-                        Console.WriteLine("<PASSED::>" + FormatMessage(testResult.Message));
-                    }
-                    testRunCount++;
-                    break;
-
-                case ResultState.Ignored:
-                case ResultState.Skipped:
-                case ResultState.NotRunnable:
-    				testIgnoreCount++;
-					
-	    			if ( progress )
-		    			Console.Write("N");
-                    break;
-			}
-
-			currentTestName = string.Empty;
+			
 		}
 
 		public void TestStarted(TestName testName)
 		{
-//			Console.WriteLine ("<IT::>" + FormatMessage (testName.Name));
+			this.outputWriter = new StringWriter();
+		}
+
+		public void TestFinished(TestResult testResult)
+		{                            
+			if (testResult.Test.ClassName != null && !describes.Contains(testResult.Test.ClassName)) {
+				Display.Write("describe", testResult.Test.ClassName);
+				describes.Add (testResult.Test.ClassName);
+			}
+			if (testResult.Test.MethodName != null) {
+				string name = testResult.Test.MethodName;
+				if (testResult.Description != null)
+				{
+					name += ": " + testResult.Description;
+				}
+
+				Display.Write("IT", name);
+			}
+
+			foreach(string category in testResult.Test.Categories)
+			{
+				Display.Prop("tag", category);
+			}
+
+			foreach (string key in testResult.Test.Properties.Keys)
+			{
+				if (!key.StartsWith("_", StringComparison.InvariantCulture))
+				{
+					Display.Prop(key, testResult.Test.Properties[key].ToString());
+				}
+			}
+
+			string stackTrace = testResult.StackTrace != null ? StackTraceFilter.Filter (testResult.StackTrace).Trim() : null;
+			if (String.IsNullOrEmpty(stackTrace))
+			{
+				stackTrace = testResult.StackTrace;
+			}
+
+			Console.Write(outputWriter.ToString());
+
+			if (testResult.IsSuccess)
+			{
+				Display.Passed(testResult.Message == null ? "Test Passed" : testResult.Message);
+				testRunCount++;
+			}
+			else if (testResult.IsFailure)
+			{
+				testRunCount++;
+				failureCount++;
+				if (testResult.Results != null) Console.WriteLine(testResult.Results.Count);
+				if (testResult.AssertCount > 1)
+				{
+					Display.Passed(String.Format("{0} passed", AssertionsName(testResult.AssertCount - 1)));
+				}
+
+				Display.Failed(testResult.Message);
+				//Display.Serialize(testResult, label: "-Test Result Info");
+				Display.Log(testResult.StackTrace, label: "-Stack Trace");
+			}
+			else if (testResult.IsError)
+			{
+				Display.Error(testResult.Message);
+				//Display.Serialize(testResult, label: "-Test Result Info");
+				Display.Log(stackTrace, mode: "ESC", label: "Stack Trace");
+			}
+
+			Console.WriteLine(String.Format("<COMPLETEDIN::>{0}", testResult.Time));
+
+			currentTestName = string.Empty;
 		}
 
 		public void SuiteStarted(TestName testName)
 		{
 			if ( level++ == 0 )
 			{
-				messages = new StringCollection();
-				testRunCount = 0;
-				testIgnoreCount = 0;
-				failureCount = 0;
-				Trace.WriteLine( "################################ UNIT TESTS ################################" );
-				Trace.WriteLine( "Running tests in '" + testName.FullName + "'..." );
+				//messages = new StringCollection();
+				//testRunCount = 0;
+				//testIgnoreCount = 0;
+				//failureCount = 0;
+				//Trace.WriteLine( "################################ UNIT TESTS ################################" );
+				//Trace.WriteLine( "Running tests in '" + testName.FullName + "'..." );
 //				Console.WriteLine ("<DESCRIBE::>" + FormatMessage (testName.UniqueName));
 			}
 		}
 
 		public void SuiteFinished(TestResult suiteResult) 
 		{
-			if ( --level == 0) 
-			{
-				Trace.WriteLine( "############################################################################" );
-
-				if (messages.Count == 0) 
-				{
-					Trace.WriteLine( "##############                 S U C C E S S               #################" );
-				}
-				else 
-				{
-					Trace.WriteLine( "##############                F A I L U R E S              #################" );
-						
-					foreach ( string s in messages ) 
-					{
-						Trace.WriteLine(s);
-					}
-				}
-
-				Trace.WriteLine( "############################################################################" );
-				Trace.WriteLine( "Executed tests       : " + testRunCount );
-				Trace.WriteLine( "Ignored tests        : " + testIgnoreCount );
-				Trace.WriteLine( "Failed tests         : " + failureCount );
-				Trace.WriteLine( "Unhandled exceptions : " + unhandledExceptions.Count);
-				Trace.WriteLine( "Total time           : " + suiteResult.Time + " seconds" );
-				Trace.WriteLine( "############################################################################");
-			}
+//			Console.WriteLine (unhandledExceptions.Count.ToString());
+//			Console.WriteLine (suiteResult.IsFailure.ToString ());
+//			Console.WriteLine (suiteResult.StackTrace);
 		}
 
 		private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -207,6 +178,18 @@ namespace NUnit.ConsoleRunner
 			if (e.ExceptionObject.GetType() != typeof(System.Threading.ThreadAbortException))
 			{
 				this.UnhandledException((Exception)e.ExceptionObject);
+			}
+		}
+
+		private string AssertionsName(int count)
+		{
+			if (count == 1)
+			{
+				return "1 assertion";
+			}
+			else 
+			{
+				return String.Format("{0} assertions", count);
 			}
 		}
 
@@ -220,7 +203,7 @@ namespace NUnit.ConsoleRunner
 			//outWriter.WriteLine(msg);
 			//outWriter.WriteLine(exception.ToString());
 
-			Console.WriteLine("<ERROR::>" + FormatMessage(msg + "\n" + exception.ToString()));
+			Display.Error(msg + "\n" + exception.ToString());
 			Trace.WriteLine(exception.ToString());
 		}
 
@@ -229,7 +212,7 @@ namespace NUnit.ConsoleRunner
 			switch ( output.Type )
 			{
 				case TestOutputType.Out:
-					outWriter.Write( output.Text );
+					outputWriter.Write( output.Text );
 					break;
 				case TestOutputType.Error:
 					errorWriter.Write( output.Text );

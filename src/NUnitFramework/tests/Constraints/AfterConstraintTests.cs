@@ -85,6 +85,7 @@ namespace NUnit.Framework.Constraints
             worker.DoWork += delegate { Thread.Sleep(1); };
             worker.RunWorkerAsync();
             Assert.That(list, Has.Count.EqualTo(1).After(5000, 100));
+			Console.WriteLine("Test output - CanTestContentsOfList");
         }
 
         [Test]
@@ -96,6 +97,7 @@ namespace NUnit.Framework.Constraints
             worker.DoWork += delegate { Thread.Sleep(1); };
             worker.RunWorkerAsync();
             Assert.That(ref list, Has.Count.EqualTo(1).After(5000, 100));
+			Console.WriteLine("Test output - CanTestContentsOfRefList");
         }
 
         [Test]
